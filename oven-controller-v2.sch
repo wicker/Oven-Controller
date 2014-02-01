@@ -5304,7 +5304,7 @@ Basic schematic elements and footprints for 0603, 1206, and PTH resistors.</desc
 <junction x="-99.06" y="-4.826"/>
 </segment>
 </net>
-<net name="SDA_PIN3" class="0">
+<net name="CCO" class="0">
 <segment>
 <wire x1="78.232" y1="45.974" x2="51.816" y2="45.974" width="0.1524" layer="91"/>
 <label x="51.816" y="45.974" size="1.778" layer="95"/>
