@@ -1,6 +1,5 @@
 # Ignoring dev dirs
 
-src
 v3-pubs
 
 # Ignore list for Eagle, a PCB layout tool
