@@ -7,4 +7,6 @@ v0 - the original schematic representation of the current working breadboard set
 
 v1 - the finished Arduino shield version on a printed circuit board. this works! 
 
-v2 - additions to the v1 Arduino shield design
+v2 - additions to the v1 Arduino shield design.
+
+v3 - developing final version for OSHPark order.
