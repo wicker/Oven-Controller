@@ -1,11 +1,40 @@
-  /*************************************************** 
-  On/ Off control 1 thermocouples 
- ****************************************************/
+/********************************************
 
-#include "Adafruit_MAX31855.h"
+ This is an oven control sketch for the Adafruit 1.8" TFT
+ shield with joystick stacked on a PSAS Airframes Team 
+ Oven Control Shield v3 stacked on an Arduino Uno.
+ 
+ Our LCD shield is the BLACKTAB version.
+ 
+ The display, SD card, and five MAX31855 thermocouple-
+ to-digital chips are all on the SPI bus. The SD card 
+ also uses the SD library. 
+ 
+ We referenced code written by Limor Fried/Ladyada
+ for Adafruit Industries under the MIT license.
+ 
+ This is oven control shield code v3 written by 
+ Thanh Tung Nguyen and Jenner Hanni, 2014. 
+ http://github.com/wicker/oven-controller/
+ 
+ *******************************************/
+  
+#include <Adafruit_MAX31855.h>
+#include <Adafruit_ST7735.h>
+#include <Adafruit_GFX.h>
+#include <SD.h>
+#include <SPI.h>
 
 #define OFF 0
 #define ON  1
+
+// assign joystick positions
+#define BUTTON_NONE 0
+#define BUTTON_DOWN 1
+#define BUTTON_RIGHT 2
+#define BUTTON_SELECT 3
+#define BUTTON_UP 4
+#define BUTTON_LEFT 5
 
 // Pins connection
 int swReset       = 0;
@@ -27,11 +56,14 @@ int fan           = A1;
 int vent          = A2;
 int joyRead       = A3;
 
+// initialize the LCD screen
+Adafruit_ST7735 tft = Adafruit_ST7735(lcdCS, lcdDC, swReset);
+
 // Indicate status variables: 0 off; 1: on
 int start      =  OFF;
 int stopnow    =  ON;
 
-// constant
+// shouldn't these be #defines or at least const double, const int, etc?
 double tempSet         =  350;        // farenheit
 double tempInc         =  3 ;         // Temperature increament per minutes
 double tempErrRange    =  0;
@@ -41,7 +73,6 @@ int timeDelay          =  5000;
 float timeMax          =  12780;      // (sec) timeMax=time_ramping+time_at_350; (set at 2 hours), initial temp: 70*F
 
 // calibration 
-
 double sensor1  =  0;
 double sensor2  =  -4;
 double sensor3  =  0;
@@ -64,6 +95,8 @@ double tempSetHigh;
 
 double startTime;
 double currTime;
+
+uint8_t buttonhistory  =  0;
 
 // Thermocouples
 Adafruit_MAX31855 thermocouple1(spiCLK, thermoCS1, spiMISO);
@@ -102,18 +135,21 @@ void one_heater_on()
   delay(100);
   Serial.println("  1 ON");  
 } 
+ 
+uint8_t readButton(void) {
+  float a = analogRead(3);
   
-void setup() {
-  Serial.begin(9600);
-  pinMode(heater1, OUTPUT);
-  pinMode(heater2, OUTPUT);
-  pinMode(fan, OUTPUT);
-  pinMode(vent, OUTPUT);
-  // wait for MAX chips to stabilize
-  delay(1000);
-  all_heaters_off();
-  Serial.println("MAX31855 test");
-  startTime= millis();
+  a *= 5.0;
+  a /= 1024.0;
+  
+  Serial.print("Button read analog = ");
+  Serial.println(a);
+  if (a < 0.2) return BUTTON_DOWN;
+  if (a < 1.0) return BUTTON_RIGHT;
+  if (a < 1.5) return BUTTON_SELECT;
+  if (a < 2.0) return BUTTON_UP;
+  if (a < 3.2) return BUTTON_LEFT;
+  else return BUTTON_NONE;
 }
 
 int scan_button(int swButton)
@@ -188,13 +224,8 @@ void sensors_reading()
   tempPrint();
 }
 
-void loop() {
-  all_heaters_off();
-  sensors_reading();
-  tempInitial = tempAverage;         // initial start temp
-  startTime=millis(); 
-  // compared and controled
-  while (start&(!stopnow))
+void run_program() {
+   while (start&(!stopnow))
   {
     currTime=millis()-startTime;   
     currTempSet=min (350, currTime/1000/60*tempInc+tempInitial);
@@ -228,7 +259,75 @@ void loop() {
     Serial.println("Mission complete, please wait until the oven cold down");
     while(1);  // stay here until turn off the controller.
   }
-  delay(timeDelay);
+}
+
+void setup() {
+  Serial.begin(9600);
   
+  // set up the pins
+  pinMode(heater1, OUTPUT);
+  pinMode(heater2, OUTPUT);
+  pinMode(fan, OUTPUT);
+  pinMode(vent, OUTPUT);
+  
+  // wait for MAX chips to stabilize
+  delay(1000);
+  all_heaters_off();
+  Serial.println("MAX31855 test");
+  startTime= millis();
+  
+  // init the LCD and fill screen
+  tft.initR(INITR_BLACKTAB);
+  tft.fillScreen(0x0000);
+}
+
+void loop() {
+  all_heaters_off();
+  sensors_reading();
+  tempInitial = tempAverage;         // initial start temp
+  startTime=millis(); 
+  // compared and controlled
+//  run_program()
+
+  uint8_t b = readButton();
+  tft.setTextSize(3);
+  if (b == BUTTON_DOWN) {
+    tft.setTextColor(ST7735_RED);
+    tft.setCursor(0, 10);
+    tft.print("Down ");
+    buttonhistory |= 1;
+  }
+  if (b == BUTTON_LEFT) {
+    tft.setTextColor(ST7735_YELLOW);
+    tft.setCursor(0, 35);
+     tft.print("Left ");
+    buttonhistory |= 2;
+  }
+  if (b == BUTTON_UP) {
+    tft.setTextColor(ST7735_GREEN);
+    tft.setCursor(0, 60);
+    tft.print("Up"); 
+    buttonhistory |= 4;
+  }
+  if (b == BUTTON_RIGHT) {
+    tft.setTextColor(ST7735_BLUE);
+    tft.setCursor(0, 85);
+    tft.print("Right");
+    buttonhistory |= 8;
+  }
+  if ((b == BUTTON_SELECT) && (buttonhistory == 0xF)) {
+    tft.setTextColor(ST7735_MAGENTA);
+    tft.setCursor(0, 110);
+    tft.print("SELECT");
+    buttonhistory |= 8;
+    delay(2000);
+    Serial.print("Initializing SD card...");
+    if (!SD.begin(sdCS)) {
+      Serial.println("failed!");
+      return;
+    }
+  }
+  delay(100);
+
 } 
 
