@@ -65,10 +65,6 @@ int joyRead       = A3;
 // initialize the LCD screen
 Adafruit_ST7735 tft = Adafruit_ST7735(lcdCS, lcdDC, swReset);
 
-// Indicate status variables: 0 off; 1: on
-int start      =  OFF;
-int stopnow    =  ON;
-
 // shouldn't these be #defines or at least const double, const int, etc?
 double tempSet         =  350;        // farenheit
 double tempInc         =  3 ;         // Temperature increament per minutes
@@ -143,6 +139,8 @@ void handle_joystick() {
 // Possible states are START, RUNNING, STOP, and STOPPED.
 // The state is updated and the timer is incremented or
 // reset to zero, depending on state.
+//
+// Possibly better to rename this update_state_machine().
 void handle_start_button()
 
   uint8_t ADCReading < ADCThreshold);
@@ -154,7 +152,11 @@ void handle_start_button()
       currTime = millis()-startTime;
     }
     else if (status == RUNNING) {
-      status = RUNNING;
+      // check if timer has reached end of profile time
+      if (currTime/1000 >= timeMax)
+        status = STOP;
+      else
+        status = RUNNING;
       currTime = millis()-startTime;
     }
     else if (status == STOP) {
@@ -245,43 +247,26 @@ void tempPrint()
   Serial.println(tempAverage);
 }
 
-void run_program() {
-   while (start&(!stopnow))
-  {
-    currTime=millis()-startTime;   
-    currTempSet=min (350, currTime/1000/60*tempInc+tempInitial);
-    Serial.print("Set temperature     F = ");
-    Serial.println(currTempSet);
-    tempSetLow= currTempSet-tempErrRange;
-    tempSetHigh= currTempSet+tempErrRange;  
- 
-    if ((tempAverage<tempSetLow)&&(tempAverage>32) ) 
-    {
-      if (tempAverage<tempSetLow-tempThreshold) all_heaters_on();
-      else one_heater_on();
-    }
-    else
-    {
-      if (tempAverage>tempSetHigh+tempThreshold)
-      {
-        all_heaters_off();
-      } 
-      else one_heater_off();
-    }
-    if ((currTime/1000)>=timeMax) 
-      {
-        stopnow=1;
-      }
-    delay(timeDelay);
-    sensors_reading();
-   }
-  if (stopnow)
-  {
-    Serial.println("Mission complete, please wait until the oven cold down");
-    while(1);  // stay here until turn off the controller.
+// Not sure exactly what this is doing.
+// It's deciding how to update the heaters, anyway.
+void set_heaters() {
+  currTempSet=min(350, currTime/1000/60*tempInc+tempInitial);
+  tempSetLow= currTempSet-tempErrRange;
+  tempSetHigh= currTempSet+tempErrRange;  
+
+  if (tempAverage < tempSetLow && tempAverage > 32) {
+    if (tempAverage < tempSetLow - tempThreshold) all_heaters_on();
+    else one_heater_on();
+  }
+  else {
+    if (tempAverage > tempSetHigh + tempThreshold)
+      all_heaters_off();
+    else 
+      one_heater_off();
   }
 }
 
+// Set up all the pins and serial connection
 void setup() {
   Serial.begin(9600);
   
