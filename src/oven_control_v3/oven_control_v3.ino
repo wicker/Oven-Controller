@@ -178,50 +178,44 @@ void tempPrint()
   Serial.println(tempAverage);
 }
 
-
-void sensors_reading()
+// Poll each thermocouple value and get an average value.
+// Adjusting by 32 for each tempSensor value
+// eliminates the SPI disconnection.
+void check_temp_sensors()
 {
-    // scanning all of the sensors and switches
-  start = scan_button(swStart);
   float tempSum=0;
   int count=0;
   tempSensor1 = thermocouple1.readFarenheit()+sensor1;
-  if (tempSensor1>32) // eliminate the SPI disconection 
-    {
-      count=count+1;
-      tempSum=tempSum+tempSensor1;
-    }
+  if (tempSensor1>32) {
+    count=count+1;
+    tempSum=tempSum+tempSensor1;
+  }
   delay(10);
   tempSensor2 = thermocouple2.readFarenheit()+sensor2;
-    if (tempSensor2>32) // eliminate the SPI disconection 
-    {
-      count=count+1;
-      tempSum=tempSum+tempSensor2;
-    }
+  if (tempSensor2>32) {
+    count=count+1;
+    tempSum=tempSum+tempSensor2;
+  }
   delay(10);
   tempSensor3 = thermocouple3.readFarenheit()+sensor3;
-    if (tempSensor3>32) // eliminate the SPI disconection 
-    {
-      count=count+1;
-      tempSum=tempSum+tempSensor3;
-    }
+  if (tempSensor3>32) {
+    count=count+1;
+    tempSum=tempSum+tempSensor3;
+  }
   delay(10);
   tempSensor4 = thermocouple4.readFarenheit()+sensor4;
-    if (tempSensor4>32) // eliminate the SPI disconection 
-    /*{
-      count=count+1;
-      tempSum=tempSum+tempSensor4;
-    }*/
+  if (tempSensor4>32) {
+    count=count+1;
+    tempSum=tempSum+tempSensor4;
+  }
   delay(10);
   tempSensor5 = thermocouple5.readFarenheit()+sensor5;
-    if (tempSensor5>32) // eliminate the SPI disconection 
-    {
-      count=count+1;
-      tempSum=tempSum+tempSensor5;
-    }
+  if (tempSensor5>32) {
+    count=count+1;
+    tempSum=tempSum+tempSensor5;
+  }
   delay(10);
   tempAverage = tempSum/count;
-  tempPrint();
 }
 
 void run_program() {
