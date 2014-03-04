@@ -112,55 +112,16 @@ Adafruit_MAX31855 thermocouple3(spiCLK, thermoCS3, spiMISO);
 Adafruit_MAX31855 thermocouple4(spiCLK, thermoCS4, spiMISO);
 Adafruit_MAX31855 thermocouple5(spiCLK, thermoCS5, spiMISO);
 
-void all_heaters_off()
+// Set the first and second heaters to ON or OFF.
+void set_both_heaters(int val1, int val2)
 {
-  digitalWrite(heater1, LOW);  // turn off the heaters
+  digitalWrite(heater1, val1);  // turn off the heaters
   delay(100);
-  digitalWrite(heater2, LOW);  // turn off the heaters
-  Serial.println("  OFF");  
+  digitalWrite(heater2, val2);  // turn off the heaters
+  delay(100);
 }
 
-void one_heater_off()
-{
-  digitalWrite(heater1, LOW);  // turn off the heaters
-  delay(100);
-  Serial.println("  1 OFF");  
-}
-
-void all_heaters_on()
-{
-  digitalWrite(heater1, HIGH);  // turn on the heaters
-  delay(100);
-  digitalWrite(heater2, HIGH);  // turn on the heaters
-  delay(100);
-  Serial.println("  ON");  
-}
- 
-void one_heater_on()
-{
-  digitalWrite(heater1, HIGH);  // turn on the heaters
-  delay(100);
-  Serial.println("  1 ON");  
-} 
- 
-void tempPrint()
-{
-  Serial.print("Current temperature F = ");
- // Serial.println(tempSensor1,"\t", tempSensor2,"\t",tempSensor3,"\t",tempSensor4,"\t",tempSensor5);
-  Serial.print(tempSensor1);
-  Serial.print(" ");
-  Serial.print(tempSensor2);
-  Serial.print(" ");
-  Serial.print(tempSensor3);
-  Serial.print(" ");
-  Serial.print(tempSensor4);
-  Serial.print(" ");
-  Serial.print(tempSensor5); 
-  Serial.print("Average temperature F = ");
-  Serial.println(tempAverage);
-}
-
-// read the joystick and save the value
+// Read the joystick and save the value in joystickVal.
 void handle_joystick() {
 
   float a = analogRead(3);
@@ -265,6 +226,23 @@ void check_temp_sensors()
   }
   delay(10);
   tempAverage = tempSum/count;
+}
+
+void tempPrint()
+{
+  Serial.print("Current temperature F = ");
+ // Serial.println(tempSensor1,"\t", tempSensor2,"\t",tempSensor3,"\t",tempSensor4,"\t",tempSensor5);
+  Serial.print(tempSensor1);
+  Serial.print(" ");
+  Serial.print(tempSensor2);
+  Serial.print(" ");
+  Serial.print(tempSensor3);
+  Serial.print(" ");
+  Serial.print(tempSensor4);
+  Serial.print(" ");
+  Serial.print(tempSensor5); 
+  Serial.print("Average temperature F = ");
+  Serial.println(tempAverage);
 }
 
 void run_program() {
