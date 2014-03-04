@@ -16,6 +16,9 @@
  
  We referenced code written by Limor Fried/Ladyada
  for Adafruit Industries under the MIT license.
+
+ GENERIC TODO: Everything related to SD card.
+ Otherwise look for TODO notes in comments.
  
  *******************************************/
   
@@ -109,7 +112,7 @@ Adafruit_MAX31855 thermocouple4(spiCLK, thermoCS4, spiMISO);
 Adafruit_MAX31855 thermocouple5(spiCLK, thermoCS5, spiMISO);
 
 // Set the first and second heaters to ON or OFF.
-void set_both_heaters(int val1, int val2)
+void set_heaters(int val1, int val2)
 {
   digitalWrite(heater1, val1);  // turn off the heaters
   delay(100);
@@ -118,7 +121,7 @@ void set_both_heaters(int val1, int val2)
 }
 
 // Read the joystick and save the value in joystickVal.
-void handle_joystick() {
+void read_joystick() {
 
   float a = analogRead(3);
 
@@ -149,7 +152,12 @@ void handle_start_button()
   if (ADCReading > ADCThreshold) {
     if (status == START) {
       status = RUNNING;
+      // set start time
+      startTime = millis(); 
       currTime = millis()-startTime;
+      // set start temperature
+      check_temp_sensors();
+      tempInitial = tempAverage;
     }
     else if (status == RUNNING) {
       // check if timer has reached end of profile time
@@ -230,23 +238,7 @@ void check_temp_sensors()
   tempAverage = tempSum/count;
 }
 
-void tempPrint()
-{
-  Serial.print("Current temperature F = ");
- // Serial.println(tempSensor1,"\t", tempSensor2,"\t",tempSensor3,"\t",tempSensor4,"\t",tempSensor5);
-  Serial.print(tempSensor1);
-  Serial.print(" ");
-  Serial.print(tempSensor2);
-  Serial.print(" ");
-  Serial.print(tempSensor3);
-  Serial.print(" ");
-  Serial.print(tempSensor4);
-  Serial.print(" ");
-  Serial.print(tempSensor5); 
-  Serial.print("Average temperature F = ");
-  Serial.println(tempAverage);
-}
-
+// TODO: FIGURE THIS OUT AND EXPLAIN IT BETTER
 // Not sure exactly what this is doing.
 // It's deciding how to update the heaters, anyway.
 void set_heaters() {
@@ -266,34 +258,22 @@ void set_heaters() {
   }
 }
 
-// Set up all the pins and serial connection
-void setup() {
-  Serial.begin(9600);
-  
-  // set up the pins
-  pinMode(heater1, OUTPUT);
-  pinMode(heater2, OUTPUT);
-  pinMode(fan, OUTPUT);
-  pinMode(vent, OUTPUT);
-  
-  // wait for MAX chips to stabilize
-  delay(1000);
-  all_heaters_off();
-  Serial.println("MAX31855 test");
-  startTime= millis();
-  
-  // init the LCD and fill screen
-  tft.initR(INITR_BLACKTAB);
-  tft.fillScreen(0x0000);
-}
-
-void loop() {
-  all_heaters_off();
-  sensors_reading();
-  tempInitial = tempAverage;         // initial start temp
-  startTime=millis(); 
-  // compared and controlled
-//  run_program()
+// Display information
+// TODO: EVERYTHING
+void tempPrint()
+{
+  Serial.print("Current temperature F = ");
+  Serial.print(tempSensor1);
+  Serial.print(" ");
+  Serial.print(tempSensor2);
+  Serial.print(" ");
+  Serial.print(tempSensor3);
+  Serial.print(" ");
+  Serial.print(tempSensor4);
+  Serial.print(" ");
+  Serial.print(tempSensor5); 
+  Serial.print("Average temperature F = ");
+  Serial.println(tempAverage);
 
   uint8_t b = readButton();
   tft.setTextSize(3);
@@ -333,6 +313,40 @@ void loop() {
       return;
     }
   }
+}
+
+// Set up all the pins and serial connection
+void setup() {
+  Serial.begin(9600);
+  
+  // set up the pins
+  pinMode(heater1, OUTPUT);
+  pinMode(heater2, OUTPUT);
+  pinMode(fan, OUTPUT);
+  pinMode(vent, OUTPUT);
+  
+  // wait for MAX chips to stabilize
+  delay(1000);
+  set_heaters(OFF,OFF);
+
+  // get the initial oven temperature
+  check_temp_sensors();
+  tempInitial = tempAverage;
+ 
+  // init the LCD and fill screen
+  tft.initR(INITR_BLACKTAB);
+  tft.fillScreen(0x0000);
+
+  // init the LCD with user selection
+  // TODO: ADD A GET_PROFILE OR SOMETHING TO GET INFO FROM USER
+  // AND WORK THAT INTO THE STATE MACHINE LOGIC
+}
+
+// TODO: VERIFY THIS LOGIC
+// TODO: FIGURE OUT WHERE DELAYS ARE NECESSARY AND ADD THEM
+void loop() {
+
+  
   delay(100);
 
 } 
