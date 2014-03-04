@@ -1,5 +1,9 @@
 /********************************************
 
+ This is oven control shield code v3 written by 
+ Thanh Tung Nguyen and Jenner Hanni, 2014. 
+ http://github.com/wicker/oven-controller/
+ 
  This is an oven control sketch for the Adafruit 1.8" TFT
  shield with joystick stacked on a PSAS Airframes Team 
  Oven Control Shield v3 stacked on an Arduino Uno.
@@ -13,10 +17,6 @@
  We referenced code written by Limor Fried/Ladyada
  for Adafruit Industries under the MIT license.
  
- This is oven control shield code v3 written by 
- Thanh Tung Nguyen and Jenner Hanni, 2014. 
- http://github.com/wicker/oven-controller/
- 
  *******************************************/
   
 #include <Adafruit_MAX31855.h>
@@ -27,6 +27,12 @@
 
 #define OFF 0
 #define ON  1
+
+// assign state values
+#define START   1
+#define RUNNING 2
+#define STOP    3
+#define STOPPED 4
 
 // assign joystick positions
 #define BUTTON_NONE 0
@@ -97,6 +103,7 @@ double startTime;
 double currTime;
 
 uint8_t buttonhistory  =  0;
+uint8_t joystickVal = 0;
 
 // Thermocouples
 Adafruit_MAX31855 thermocouple1(spiCLK, thermoCS1, spiMISO);
@@ -136,31 +143,6 @@ void one_heater_on()
   Serial.println("  1 ON");  
 } 
  
-uint8_t readButton(void) {
-  float a = analogRead(3);
-  
-  a *= 5.0;
-  a /= 1024.0;
-  
-  Serial.print("Button read analog = ");
-  Serial.println(a);
-  if (a < 0.2) return BUTTON_DOWN;
-  if (a < 1.0) return BUTTON_RIGHT;
-  if (a < 1.5) return BUTTON_SELECT;
-  if (a < 2.0) return BUTTON_UP;
-  if (a < 3.2) return BUTTON_LEFT;
-  else return BUTTON_NONE;
-}
-
-int scan_button(int swButton)
-{
-  int ADCreading = analogRead(swButton);
-//  Serial.println(ADCreading);
-  if (ADCreading < ADCThreshold) 
-         return (1);
-  else   return (0);
-}
-
 void tempPrint()
 {
   Serial.print("Current temperature F = ");
@@ -176,6 +158,73 @@ void tempPrint()
   Serial.print(tempSensor5); 
   Serial.print("Average temperature F = ");
   Serial.println(tempAverage);
+}
+
+// read the joystick and save the value
+void handle_joystick() {
+
+  float a = analogRead(3);
+
+  a *= 5.0;
+  a /= 1024.0;
+  
+  Serial.print("Button read analog = ");
+  Serial.println(a);
+  if (a < 0.2) joystickVal = BUTTON_DOWN;
+  if (a < 1.0) joystickVal = BUTTON_RIGHT;
+  if (a < 1.5) joystickVal = BUTTON_SELECT;
+  if (a < 2.0) joystickVal = BUTTON_UP;
+  if (a < 3.2) joystickVal = BUTTON_LEFT;
+  else         joystickVal = BUTTON_NONE;
+}
+
+// Read the start button and update the state machine.
+// Possible states are START, RUNNING, STOP, and STOPPED.
+// The state is updated and the timer is incremented or
+// reset to zero, depending on state.
+void handle_start_button()
+
+  uint8_t ADCReading < ADCThreshold);
+
+  // if the input is HIGH, handle it as a START
+  if (ADCReading > ADCThreshold) {
+    if (status == START) {
+      status = RUNNING;
+      currTime = millis()-startTime;
+    }
+    else if (status == RUNNING) {
+      status = RUNNING;
+      currTime = millis()-startTime;
+    }
+    else if (status == STOP) {
+      status = STOPPED;
+      currTime = 0;
+    }
+    else { 
+      status = START;
+      currTime = 0;
+    }
+  }
+
+  // otherwise the input is LOW, handle it as a STOP
+  else {
+    if (status == START) {
+      status = STOP;
+      currTime = millis()-startTime;
+    }
+    else if (status == RUNNING) {
+      status = STOP;
+      currTime = millis()-startTime;
+    }
+    else if (status == STOP) {
+      status = STOPPED;
+      currTime = 0;
+    }
+    else { 
+      status = STOPPED;
+      currTime = 0;
+    }
+  }
 }
 
 // Poll each thermocouple value and get an average value.
