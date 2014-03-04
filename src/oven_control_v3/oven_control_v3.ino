@@ -112,8 +112,7 @@ Adafruit_MAX31855 thermocouple4(spiCLK, thermoCS4, spiMISO);
 Adafruit_MAX31855 thermocouple5(spiCLK, thermoCS5, spiMISO);
 
 // Set the first and second heaters to ON or OFF.
-void set_heaters(int val1, int val2)
-{
+void set_heaters(int val1, int val2) {
   digitalWrite(heater1, val1);  // turn off the heaters
   delay(100);
   digitalWrite(heater2, val2);  // turn off the heaters
@@ -144,7 +143,7 @@ void read_joystick() {
 // reset to zero, depending on state.
 //
 // Possibly better to rename this update_state_machine().
-void handle_start_button()
+void handle_start_button() {
 
   uint8_t ADCReading < ADCThreshold);
 
@@ -201,8 +200,7 @@ void handle_start_button()
 // Poll each thermocouple value and get an average value.
 // Adjusting by 32 for each tempSensor value
 // eliminates the SPI disconnection.
-void check_temp_sensors()
-{
+void check_temp_sensors() {
   float tempSum=0;
   int count=0;
   tempSensor1 = thermocouple1.readFarenheit()+sensor1;
@@ -241,27 +239,29 @@ void check_temp_sensors()
 // TODO: FIGURE THIS OUT AND EXPLAIN IT BETTER
 // Not sure exactly what this is doing.
 // It's deciding how to update the heaters, anyway.
-void set_heaters() {
+// This really ought to take the state use it.
+void update_heaters(int state) {
   currTempSet=min(350, currTime/1000/60*tempInc+tempInitial);
   tempSetLow= currTempSet-tempErrRange;
   tempSetHigh= currTempSet+tempErrRange;  
 
   if (tempAverage < tempSetLow && tempAverage > 32) {
-    if (tempAverage < tempSetLow - tempThreshold) all_heaters_on();
-    else one_heater_on();
+    if (tempAverage < tempSetLow - tempThreshold) 
+      set_heaters(ON,ON);
+    else 
+      set_heaters(ON,OFF);
   }
   else {
     if (tempAverage > tempSetHigh + tempThreshold)
-      all_heaters_off();
+      set_heaters(OFF,OFF);
     else 
-      one_heater_off();
+      set_heaters(OFF,ON);
   }
 }
 
 // Display information
 // TODO: EVERYTHING
-void tempPrint()
-{
+void update_display() {
   Serial.print("Current temperature F = ");
   Serial.print(tempSensor1);
   Serial.print(" ");
@@ -346,7 +346,17 @@ void setup() {
 // TODO: FIGURE OUT WHERE DELAYS ARE NECESSARY AND ADD THEM
 void loop() {
 
-  
+  // get inputs
+  read_joystick();
+  check_temp_sensors();
+
+  // update state machine based on those inputs
+  handle_start_button();
+  update_heaters(status);
+
+  // update display
+  update_display();
+
   delay(100);
 
 } 
